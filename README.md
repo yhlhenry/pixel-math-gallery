@@ -37,8 +37,8 @@
 
 如果帳號或 repo 名稱不是 `yhlhenry/pixel-math-gallery`，記得修改 `index.html` 裡 `og:url`、`og:image` 的網址，以及本檔案最上面的連結。
 
-## 致謝與授權
+## 作者與版權
 
-- 原始版本作者：（待補）
+- 作者：Henry Yang（[@yhlhenry](https://github.com/yhlhenry)）
 - 內建圖庫的 pixel art 為本專案原創。
-- 授權：（待補，建議與原作者確認後再選定，例如 MIT）
+- © 2026 Henry Yang. All rights reserved.
