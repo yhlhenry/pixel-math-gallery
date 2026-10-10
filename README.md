@@ -2,7 +2,7 @@
 
 把 pixel art 變成數學塗色遊戲紙：每一格都是一道算式，算出答案、依色票塗色，就會出現隱藏圖案。適合國小一到六年級，可直接列印。
 
-**線上使用：** https://henry-yang-appier.github.io/pixel-math-gallery/
+**線上使用：** https://yhlhenry.github.io/pixel-math-gallery/
 
 ![像素算算樂](og-image.png)
 
@@ -35,7 +35,7 @@
 2. 到 repo 的 **Settings → Pages**，Source 選 **Deploy from a branch**，Branch 選 `main`、資料夾選 `/ (root)`。
 3. 幾分鐘後就能在 `https://<帳號>.github.io/<repo 名稱>/` 使用。
 
-如果帳號或 repo 名稱不是 `henry-yang-appier/pixel-math-gallery`，記得修改 `index.html` 裡 `og:url`、`og:image` 的網址，以及本檔案最上面的連結。
+如果帳號或 repo 名稱不是 `yhlhenry/pixel-math-gallery`，記得修改 `index.html` 裡 `og:url`、`og:image` 的網址，以及本檔案最上面的連結。
 
 ## 致謝與授權
 

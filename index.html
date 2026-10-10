@@ -10,8 +10,8 @@
 <meta property="og:type" content="website" />
 <meta property="og:title" content="像素算算樂｜算一算，塗出圖案" />
 <meta property="og:description" content="把 pixel art 變成數學塗色遊戲紙，適合國小一到六年級，可直接列印。" />
-<meta property="og:url" content="https://henry-yang-appier.github.io/pixel-math-gallery/" />
-<meta property="og:image" content="https://henry-yang-appier.github.io/pixel-math-gallery/og-image.png" />
+<meta property="og:url" content="https://yhlhenry.github.io/pixel-math-gallery/" />
+<meta property="og:image" content="https://yhlhenry.github.io/pixel-math-gallery/og-image.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
@@ -42,6 +42,7 @@
       <div class="field"><div class="field-head"><label for="colorMode">配色方式</label><span class="hint">答案 0–9 對應色票</span></div><select id="colorMode"><option value="image" selected>原圖配色（最多 10 色）</option><option value="resistor">電阻色碼（標準 10 色）</option></select><div class="mini-caption" id="colorModeHint">從圖片挑選代表色，讓成品更接近原圖。</div></div>
       <div class="field"><div class="field-head"><label>算式難度</label><span class="hint" id="levelName">適合國小二年級</span></div><div class="difficulty-grid" id="difficulty"><button data-level="1">一年級</button><button data-level="2" class="selected">二年級</button><button data-level="3">三年級</button><button data-level="4">四年級</button><button data-level="5">五年級</button><button data-level="6">六年級</button></div><div class="mini-caption" id="levelDesc">加減法，數字在 20 以內</div></div>
       <div class="field"><div class="field-head"><label for="seed">變化程度</label><span class="hint">每格隨機出題</span></div><select id="seed"><option value="mixed" selected>混合算式</option><option value="plus">以加法為主</option><option value="minus">以減法為主</option><option value="times">乘法／除法為主</option></select></div>
+      <div class="toggle-row" id="skipWhiteRow"><label for="skipWhite">白色格子不出題（直接留白）</label><input type="checkbox" class="switch" id="skipWhite" checked /></div><div class="mini-caption" id="skipWhiteHint">背景等白色格子不放算式，題目更少、也不用塗。</div>
       <div class="toggle-row" id="inCellRow"><label for="inCell">算式直接寫在格子裡</label><input type="checkbox" class="switch" id="inCell" checked /></div><div class="mini-caption" id="inCellHint">寬度 20 格以內可用；圖太大或算式太長時改用座標題目表。</div>
       <div class="field" style="margin-top:14px"><div class="field-head"><label for="seedCode">題目編號</label><span class="hint">留空＝每次隨機出題</span></div><input type="number" id="seedCode" min="1" max="99999" inputmode="numeric" placeholder="例如 48213，用來重出同一份題目" /></div>
       <button class="primary" id="generate" disabled>生成算式塗色遊戲　→</button>
@@ -71,7 +72,7 @@
   const LEVELS={1:'加減法，數字在 10 以內',2:'加減法，數字在 20 以內',3:'乘法、除法與兩位數加減',4:'四則混合，練習運算順序',5:'較大的數字與兩步驟算式',6:'進階四則混合與括號'};
   const IN_CELL_MAX=20, SOURCE_MAX=1600;
   const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-  const fileInput=$('#imageInput'),drop=$('#dropZone'),genBtn=$('#generate'),printBtn=$('#printBtn'),answerBtn=$('#answerBtn'),stage=$('#previewStage'),colorMode=$('#colorMode'),maxCells=$('#maxCells'),inCell=$('#inCell');
+  const fileInput=$('#imageInput'),drop=$('#dropZone'),genBtn=$('#generate'),printBtn=$('#printBtn'),answerBtn=$('#answerBtn'),stage=$('#previewStage'),colorMode=$('#colorMode'),maxCells=$('#maxCells'),inCell=$('#inCell'),skipWhite=$('#skipWhite');
   // Original 16×16 sprites. `half` rows are the left 8 columns and get mirrored, which keeps faces symmetric; '.' is background.
   const ART_GALLERY=[
     {name:'貓咪',kind:'可愛動物',colors:{K:'#3d3132',O:'#f6a34b',P:'#f7a1b0',W:'#ffffff'},half:[
@@ -135,6 +136,7 @@
   maxCells.addEventListener('input',()=>{$('#maxCellsOut').textContent=`${maxCells.value} 格`;});
   maxCells.addEventListener('change',settingsChanged);
   inCell.addEventListener('change',()=>{if(['worksheet'].includes(activeTab))render();});
+  skipWhite.addEventListener('change',()=>{if(!game?.equations)return;status(summary());if(['worksheet','questions','answer'].includes(activeTab))render();});
   fileInput.addEventListener('change',e=>{if(e.target.files[0])loadFile(e.target.files[0]);});
   for(const ev of ['dragenter','dragover'])drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag');});
   for(const ev of ['dragleave','drop'])drop.addEventListener(ev,()=>drop.classList.remove('drag'));
@@ -189,9 +191,12 @@
     // Drop representative colours that no cell ended up using, so the legend and answers stay 0…n-1.
     if(mode==='image'){const used=[...new Set(values)].sort((a,b)=>a-b);if(used.length<palette.length){const remap=new Map(used.map((v,i)=>[v,i]));palette=used.map((v,i)=>({...palette[v],value:i,name:`色票 ${i}`}));for(let n=0;n<values.length;n++)values[n]=remap.get(values[n]);}}
     const pc=document.createElement('canvas');pc.width=gw;pc.height=gh;pc.getContext('2d').putImageData(out,0,0);pixelCanvas=pc;
-    game={w:gw,h:gh,values,codes:values,palette,paletteMode:mode,equations:null,srcW:w,srcH:h,block:bx,reduced};
+    // The near-white entry (if any) is what "白色格子不出題" leaves blank.
+    const white=palette.filter(c=>c.lab[0]>.96&&Math.hypot(c.lab[1],c.lab[2])<.03).sort((a,b)=>b.lab[0]-a.lab[0])[0];
+    game={w:gw,h:gh,values,codes:values,palette,paletteMode:mode,equations:null,srcW:w,srcH:h,block:bx,reduced,blankValue:white?white.value:null};
     const pages=gw>IN_CELL_MAX?Math.ceil(gh/4):0;$('#sizeInfo').textContent=(bx>1?`原圖 ${w} × ${h} px，偵測到每格 ${bx} px → ${gw} × ${gh} 格${reduced?'（已縮小）':''}`:reduced||shrink<1?`原圖 ${w} × ${h} px，已縮成 ${gw} × ${gh} 格`:`原圖 ${w} × ${h} px，每個像素一格`)+(pages>=6?`。題目表約 ${pages} 頁，想省紙可以把最大格數調小`:'');
-    const canInCell=gw<=IN_CELL_MAX;inCell.disabled=!canInCell;$('#inCellRow').classList.toggle('disabled',!canInCell);}
+    const canInCell=gw<=IN_CELL_MAX;inCell.disabled=!canInCell;$('#inCellRow').classList.toggle('disabled',!canInCell);
+    const hasWhite=game.blankValue!=null;skipWhite.disabled=!hasWhite;$('#skipWhiteRow').classList.toggle('disabled',!hasWhite);$('#skipWhiteHint').textContent=hasWhite?'背景等白色格子不放算式，題目更少、也不用塗。':'這張圖沒有白色，每一格都會出題。';}
   // Seeded generator (mulberry32): the same 題目編號 + image + settings always gives the same sheet.
   let rng=Math.random;
   const seeded=seed=>()=>{seed=(seed+0x6D2B79F5)|0;let t=Math.imul(seed^(seed>>>15),1|seed);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};
@@ -224,21 +229,26 @@
     if(op==='minus'){const a=randInt(target+10,target+60);return `${a} − ${a-target}`;}
     const c=randInt(10,40),s=target+c,a=randInt(1,s-1);return `${a} + ${s-a} − ${c}`;
   }
-  genBtn.addEventListener('click',async()=>{if(!sourceImage){toast('請先上傳圖片');return;}genBtn.disabled=true;genBtn.textContent='正在生成…';setPrintable(false);status('正在準備算式…');try{await new Promise(resolve=>requestAnimationFrame(resolve));if(!game)buildPixelArt();const level=+$('#difficulty .selected').dataset.level,style=$('#seed').value,typed=parseInt($('#seedCode').value,10),code=typed>=1&&typed<=99999?typed:Math.floor(Math.random()*90000)+10000;rng=seeded(code*7+level*100003+['mixed','plus','minus','times'].indexOf(style));game.equations=game.codes.map(c=>equationFor(c,level,style));rng=Math.random;game.code=code;game.levelName=['','一','二','三','四','五','六'][level]+'年級';status(`題目編號 ${game.code} · ${game.w} × ${game.h} 格 · ${game.equations.length} 題 · ${game.palette.filter(c=>game.codes.includes(c.value)).length} 種顏色`);activeTab='worksheet';$$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.tab==='worksheet'));await render();setPrintable(true);}catch(err){console.error(err);status('生成失敗，請重新整理後再試');toast('生成時發生問題，請重新整理後再試');}finally{genBtn.disabled=!sourceImage;genBtn.textContent='生成算式塗色遊戲　→';}});
-  const longestEquation=()=>Math.max(0,...(game?.equations||[]).map(e=>e.length));
+  genBtn.addEventListener('click',async()=>{if(!sourceImage){toast('請先上傳圖片');return;}genBtn.disabled=true;genBtn.textContent='正在生成…';setPrintable(false);status('正在準備算式…');try{await new Promise(resolve=>requestAnimationFrame(resolve));if(!game)buildPixelArt();const level=+$('#difficulty .selected').dataset.level,style=$('#seed').value,typed=parseInt($('#seedCode').value,10),code=typed>=1&&typed<=99999?typed:Math.floor(Math.random()*90000)+10000;rng=seeded(code*7+level*100003+['mixed','plus','minus','times'].indexOf(style));game.equations=game.codes.map(c=>equationFor(c,level,style));rng=Math.random;game.code=code;game.levelName=['','一','二','三','四','五','六'][level]+'年級';status(summary());activeTab='worksheet';$$('.tabs button').forEach(x=>x.classList.toggle('active',x.dataset.tab==='worksheet'));await render();setPrintable(true);}catch(err){console.error(err);status('生成失敗，請重新整理後再試');toast('生成時發生問題，請重新整理後再試');}finally{genBtn.disabled=!sourceImage;genBtn.textContent='生成算式塗色遊戲　→';}});
+  const skipping=()=>skipWhite.checked&&game?.blankValue!=null;
+  const eqAt=i=>skipping()&&game.codes[i]===game.blankValue?null:game.equations[i];
+  const questionCount=()=>game.equations.filter((_,i)=>eqAt(i)!==null).length;
+  function summary(){return `題目編號 ${game.code} · ${game.w} × ${game.h} 格 · ${questionCount()} 題 · ${game.palette.filter(c=>game.codes.includes(c.value)).length} 種顏色`;}
+  const longestEquation=()=>Math.max(0,...(game?.equations||[]).map((e,i)=>eqAt(i)?.length||0));
   const inCellFits=()=>game.w<=IN_CELL_MAX&&game.w*longestEquation()<=280;
   const useInCell=()=>inCell.checked&&game&&inCellFits();
-  function legendHTML(){return `<div class="legend">${(game?.palette||COLORS).map(c=>`<span class="legend-item"><span class="swatch" style="background:${c.hex};color:${c.ink}">${c.value}</span>${c.name}</span>`).join('')}</div>`;}
+  function legendHTML(){const skip=game?.equations&&skipping();return `<div class="legend">${(game?.palette||COLORS).filter(c=>!skip||c.value!==game.blankValue).map(c=>`<span class="legend-item"><span class="swatch" style="background:${c.hex};color:${c.ink}">${c.value}</span>${c.name}</span>`).join('')}${skip?'<span class="legend-item"><span class="swatch" style="background:#fff"></span>沒有算式的格子：留白不用塗</span>':''}</div>`;}
   function meta(title){const subtitle=game?.paletteMode==='image'?'像素算算樂・原圖代表色塗色遊戲':'像素算算樂・電阻色碼塗色遊戲';const code=game?.code?` · ${game.levelName} · 題目編號 ${game.code}`:'';return `<div class="worksheet-meta"><div><b>${title}</b><div class="print-subtitle">${subtitle}${code}</div></div><div class="name-line"><span>姓名</span><span>日期</span></div></div>`;}
   function rowName(n){let out='';for(n++;n;n=Math.floor((n-1)/26))out=String.fromCharCode(65+(n-1)%26)+out;return out;}
   function coordinate(i){return `${rowName(Math.floor(i/game.w))}${i%game.w+1}`;}
   const eqHTML=e=>e.replace(/ ([×÷+−]) /g,' $1\u00a0').replace(/\([^)]*\)/g,m=>`<span class="nb">${m}</span>`);
   function questionTable(){const PER_LINE=5,table=document.createElement('table');table.className='question-table';let html=`<colgroup>${'<col>'.repeat(PER_LINE)}</colgroup>`;
-    for(let y=0;y<game.h;y++){const row=rowName(y);html+=`<tbody class="row-group"><tr class="group-head"><td colspan="${PER_LINE}"><span class="group-letter">${row}</span>${row} 列 · ${row}1 – ${row}${game.w}</td></tr>`;
-      for(let x=0;x<game.w;x+=PER_LINE){html+='<tr>';for(let k=x;k<x+PER_LINE;k++){const j=y*game.w+k;html+=k<game.w?`<td><div class="q"><b>${row}${k+1}</b><span>${eqHTML(game.equations[j])}</span></div></td>`:'<td></td>';}html+='</tr>';}html+='</tbody>';}
+    for(let y=0;y<game.h;y++){const row=rowName(y),cols=[];for(let x=0;x<game.w;x++)if(eqAt(y*game.w+x)!==null)cols.push(x);if(!cols.length)continue;
+      html+=`<tbody class="row-group"><tr class="group-head"><td colspan="${PER_LINE}"><span class="group-letter">${row}</span>${row} 列 · ${cols.length===game.w?`${row}1 – ${row}${game.w}`:`${cols.length} 題，其餘留白`}</td></tr>`;
+      for(let n=0;n<cols.length;n+=PER_LINE){html+='<tr>';for(let k=n;k<n+PER_LINE;k++){const x=cols[k];html+=x!==undefined?`<td><div class="q"><b>${row}${x+1}</b><span>${eqHTML(game.equations[y*game.w+x])}</span></div></td>`:'<td></td>';}html+='</tr>';}html+='</tbody>';}
     table.innerHTML=html;return table;}
   function gridMap(){const map=document.createElement('div');map.className='grid-map';map.style.setProperty('--cols',game.w);map.style.setProperty('--rows',game.h);map.style.setProperty('--ratio',`${game.w}/${game.h}`);const blank=document.createElement('div');const cols=document.createElement('div');cols.className='coord-columns';for(let x=1;x<=game.w;x++){const label=document.createElement('span');label.textContent=String(x);if(x%5===0)label.className='major';cols.append(label);}const rows=document.createElement('div');rows.className='coord-rows';for(let y=0;y<game.h;y++){const label=document.createElement('span');label.textContent=rowName(y);if((y+1)%5===0)label.className='major';rows.append(label);}const grid=document.createElement('div');grid.className='game-grid';grid.style.gridTemplateColumns=`repeat(${game.w},minmax(0,1fr))`;grid.style.gridTemplateRows=`repeat(${game.h},minmax(0,1fr))`;map.append(blank,cols,rows,grid);return {map,grid};}
-  function makeCell(i,withExpr){const cell=document.createElement('div'),x=i%game.w,y=Math.floor(i/game.w);cell.className='game-cell';if((x+1)%5===0&&x+1<game.w)cell.classList.add('c5');if((y+1)%5===0&&y+1<game.h)cell.classList.add('r5');if(withExpr){const e=document.createElement('span');e.className='expr';e.textContent=game.equations[i];e.style.setProperty('--len',game.equations[i].length);cell.append(e);}return cell;}
+  function makeCell(i,withExpr){const cell=document.createElement('div'),x=i%game.w,y=Math.floor(i/game.w);cell.className='game-cell';if((x+1)%5===0&&x+1<game.w)cell.classList.add('c5');if((y+1)%5===0&&y+1<game.h)cell.classList.add('r5');const eq=eqAt(i);if(withExpr&&eq!==null){const e=document.createElement('span');e.className='expr';e.textContent=eq;e.style.setProperty('--len',eq.length);cell.append(e);}return cell;}
   // Draw the answer scaled up by whole pixels so it stays sharp even where image-rendering:pixelated is ignored (print).
   function answerCanvas(){const scale=Math.max(1,Math.ceil(720/Math.max(game.w,game.h))),c=document.createElement('canvas');c.className='answer-image';c.width=game.w*scale;c.height=game.h*scale;const ctx=c.getContext('2d');game.codes.forEach((v,i)=>{ctx.fillStyle=game.palette[v].hex;ctx.fillRect((i%game.w)*scale,Math.floor(i/game.w)*scale,scale,scale);});return c;}
   async function render(){const version=++renderVersion;stage.innerHTML='';if(activeTab==='gallery'){const gallery=document.createElement('div');gallery.className='gallery-wrap';gallery.innerHTML='<h3 class="gallery-title">挑一張圖，開始做成遊戲紙</h3><p class="gallery-intro">每張範例都會保留自己的像素尺寸。也可以在左側上傳自己的 pixel art。</p>';const cards=document.createElement('div');cards.className='gallery-grid';for(const item of ART_GALLERY){const card=document.createElement('button');card.type='button';card.className=`gallery-card${sourceName===item.name?' active':''}`;const rows=artRows(item);card.setAttribute('aria-label',`選擇${item.name}，${rows[0].length}乘${rows.length}像素`);const img=document.createElement('img');img.src=galleryImageSource(item);img.alt='';const label=document.createElement('span');label.textContent=item.name;const note=document.createElement('small');note.textContent=`${item.kind} · ${rows[0].length} × ${rows.length}`;card.append(img,label,note);card.addEventListener('click',()=>loadGalleryItem(item));cards.append(card);}gallery.append(cards);gallery.insertAdjacentHTML('beforeend','<p class="gallery-footnote">圖庫範例可直接使用；圖片也會在瀏覽器內處理。</p>');stage.append(gallery);return;}if(!sourceImage||!game){stage.innerHTML='<div class="empty"><div class="big">🧩</div><strong>先上傳一張 pixel art 圖片</strong><p>每個原始像素會成為一格，顏色依所選配色方式轉換。</p></div>';return;}
