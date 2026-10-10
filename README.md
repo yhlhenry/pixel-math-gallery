@@ -39,6 +39,6 @@
 
 ## 作者與版權
 
-- 作者：Henry Yang（[@yhlhenry](https://github.com/yhlhenry)）
+- 作者：亨利羊 Henry Yang（[henryyang.tw](https://henryyang.tw/) · [@yhlhenry](https://github.com/yhlhenry)）
 - 內建圖庫的 pixel art 為本專案原創。
-- © 2026 Henry Yang. All rights reserved.
+- © 2026 亨利羊 Henry Yang. All rights reserved.
