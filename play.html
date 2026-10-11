@@ -68,7 +68,7 @@ a{color:var(--green)}
 .keys{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
 .key{height:clamp(48px,7vh,60px);border:0;border-radius:14px;background:#f2f3ee;font-size:26px;font-weight:800;box-shadow:0 2px 0 #dcddd5;transition:transform .05s}
 .key:active{transform:translateY(2px);box-shadow:none}
-.nav{display:flex;gap:8px}.kbd-hint{display:none;text-align:center;font-size:12px;color:var(--muted);line-height:2}.focus-hint{text-align:center;font-size:13px;font-weight:700;color:#8a5a12;background:#fff4e0;border:1px solid #f3d9a8;border-radius:10px;padding:8px 10px}.kbd-hint span{display:block;white-space:nowrap}.kbd-hint kbd{font:700 11px/1 "DM Sans",sans-serif;border:1px solid #d5d6cf;border-bottom-width:2px;border-radius:5px;padding:2px 6px;margin:0 1px;background:#fafaf7;color:#3d453e}.key.pressed{transform:translateY(2px);box-shadow:none;background:#dfeee3}
+.nav{display:flex;gap:8px}.kbd-hint{display:none;text-align:center;font-size:12px;color:var(--muted);line-height:2}.focus-hint{text-align:center;font-size:13px;font-weight:700;color:#8a5a12;background:#fff4e0;border:1px solid #f3d9a8;border-radius:10px;padding:8px 10px}.kbd-help{margin-top:4px;text-align:left}.kbd-help summary{cursor:pointer;text-align:center;font-weight:700;color:var(--green);list-style:none}.kbd-help summary::-webkit-details-marker{display:none}.kbd-help summary::after{content:" ▾"}.kbd-help[open] summary::after{content:" ▴"}.kbd-help ol{margin:6px 0 0;padding:10px 12px 10px 30px;background:#f7f8f4;border-radius:10px;line-height:1.6;white-space:normal}.kbd-help li+li{margin-top:4px}.kbd-help b{color:var(--ink)}.kbd-hint span{display:block;white-space:nowrap}.kbd-hint kbd{font:700 11px/1 "DM Sans",sans-serif;border:1px solid #d5d6cf;border-bottom-width:2px;border-radius:5px;padding:2px 6px;margin:0 1px;background:#fafaf7;color:#3d453e}.key.pressed{transform:translateY(2px);box-shadow:none;background:#dfeee3}
 @media (hover:hover) and (pointer:fine){.kbd-hint{display:block}}
 .nav button{flex:1;height:40px;border:0;border-radius:11px;background:#f6f6f1;font-size:13px;font-weight:700;color:#4c554d}
 
@@ -136,8 +136,13 @@ a{color:var(--green)}
       <div class="msg" id="msg" aria-live="polite">算出答案，按下面的數字</div>
       <div class="keys" id="keys"></div>
       <div class="nav"><button id="prevBtn">← 上一格</button><button id="skipBtn">跳過這格 →</button></div>
-      <div class="focus-hint hidden" id="focusHint">⌨️ 鍵盤沒反應？先點一下遊戲畫面，再打數字</div>
-      <div class="kbd-hint" id="kbdHint"><span>⌨️ 也可以用鍵盤：<kbd>0</kbd>–<kbd>9</kbd> 作答</span><span><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 換格子　<kbd>Tab</kbd> 跳過</span></div>
+      <div class="focus-hint hidden" id="focusHint">⌨️ 鍵盤沒反應？先點一下遊戲畫面，再打數字。有裝 Vimium 這類擴充功能請先暫停它。</div>
+      <div class="kbd-hint" id="kbdHint"><span>⌨️ 也可以用鍵盤：<kbd>0</kbd>–<kbd>9</kbd> 作答</span><span><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 換格子　<kbd>Tab</kbd> 跳過</span>
+        <details class="kbd-help"><summary>鍵盤沒反應？</summary><ol>
+          <li><b>先點一下遊戲畫面。</b>游標在網址列或開發者工具時，按鍵不會傳到遊戲。</li>
+          <li><b>暫停鍵盤操作類的擴充功能。</b>Vimium、Vimium C、Surfingkeys 這類用鍵盤控制網頁的擴充功能會把數字鍵攔走。Vimium 可以按 <kbd>i</kbd> 進入輸入模式，或在它的設定裡把這個網址加進排除清單。</li>
+          <li><b>還是不行就用上面的按鈕作答</b>，一樣可以玩完。</li>
+        </ol></details></div>
     </section>
   </div>
 </div>
@@ -164,7 +169,7 @@ a{color:var(--green)}
     <h2 id="menuTitle">設定</h2>
     <label class="row"><span>顯示計時<small>完成時告訴你花了多久</small></span><input type="checkbox" class="switch" id="timerSwitch" /></label>
     <div class="row"><span>題目編號<small id="codeInfo"></small></span></div>
-    <div class="row"><span>版本<small>2026-10-11c（鍵盤輸入修正後）</small></span></div>
+    <div class="row"><span>版本<small>2026-10-11d</small></span></div>
     <button class="btn" id="shareBtn">分享這一題給別人</button>
     <button class="btn ghost" id="restartBtn">重新開始這一題</button>
     <a class="btn ghost" href="play.html">換一張圖</a>
