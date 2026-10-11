@@ -176,7 +176,7 @@ a{color:var(--green)}
     <label class="row"><span>格子裡顯示題目<small>一眼看到所有算式，可以先挑會的算</small></span><input type="checkbox" class="switch" id="eqSwitch" /></label>
     <label class="row"><span>顯示計時<small>完成時告訴你花了多久</small></span><input type="checkbox" class="switch" id="timerSwitch" /></label>
     <div class="row"><span>題目編號<small id="codeInfo"></small></span></div>
-    <div class="row"><span>版本<small>2026-10-11e</small></span></div>
+    <div class="row"><span>版本<small>2026-10-11f</small></span></div>
     <button class="btn" id="shareBtn">分享這一題給別人</button>
     <button class="btn ghost" id="restartBtn">重新開始這一題</button>
     <a class="btn ghost" href="play.html">換一張圖</a>
@@ -201,7 +201,7 @@ a{color:var(--green)}
 <script>
 (() => {
   'use strict';
-  const {ART_GALLERY,galleryImageSource,TOPICS,levelName,answersFor,generateEquations,encodePuzzle,decodePuzzle,spritePuzzle}=window.PM;
+  const {ART_GALLERY,galleryImageSource,TOPICS,levelName,generatePuzzle,encodePuzzle,decodePuzzle,spritePuzzle}=window.PM;
   const $=s=>document.querySelector(s);
   const MAX_SIDE=32;
   const KBD=matchMedia('(hover:hover) and (pointer:fine)').matches;
@@ -230,7 +230,7 @@ a{color:var(--green)}
     try{z=decodePuzzle(p);}catch(e){console.error(e);document.body.innerHTML='<p style="padding:24px;font-family:sans-serif">這個連結好像壞掉了。<a href="play.html">回到選圖</a></p>';return;}
     if(z.w>MAX_SIDE||z.h>MAX_SIDE){document.body.innerHTML=`<p style="padding:24px;font-family:sans-serif">這張圖有 ${z.w} × ${z.h} 格，線上玩最多 ${MAX_SIDE} 格。請回 <a href="./">產生器</a> 把「最大格數」調小。</p>`;return;}
     $('#game').classList.remove('hidden');
-    const eqs=generateEquations(z.codes,z.level,z.style,z.code),answers=answersFor(z.level,z.code),target=i=>answers[z.codes[i]];
+    const {equations:eqs,answers}=generatePuzzle(z.codes,z.level,z.style,z.code),target=i=>answers[i];
     const multi=z.codes.some((v,i)=>target(i)>9);let typed='';
     const isBlank=i=>z.blank!==null&&z.codes[i]===z.blank;
     const todoIdx=z.codes.map((_,i)=>i).filter(i=>!isBlank(i));

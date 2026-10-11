@@ -95,7 +95,7 @@ const ADVANCED={
     {tags:['plus','minus'],make:t=>{const s2=randInt(2,20),s1=t+s2,a=randInt(1,s1-1),c=randInt(1,s2-1);return `(${a} + ${s1-a}) − (${c} + ${s2-c})`;}}]
 };
 // 專項練習 (levels 7+): one skill each, e.g. for curricula that are not split by grade.
-// Their answers go beyond 0–9, so each colour gets its own answer value (see answersFor).
+// Their answers go beyond 0–9, so each colour stands for a few different answers (see answerGroups).
 const range=(a,b)=>Array.from({length:b-a+1},(_,i)=>a+i);
 const between=(lo,hi)=>randInt(lo,hi);
 const PRODUCTS=[...new Set(range(2,9).flatMap(a=>range(2,9).map(b=>a*b)))];
@@ -109,12 +109,19 @@ const TOPICS={
 };
 const MAX_LEVEL=12;
 const levelName=l=>TOPICS[l]?TOPICS[l].name:`${['','一','二','三','四','五','六'][l]}年級`;
-// Answer for each palette index. Grades use the index itself (0–9); topics draw 10 different answers from their range, smallest first.
-function answersFor(level,code){
-  const t=TOPICS[level];if(!t)return range(0,9);
+// Answers each palette index stands for. Grades: the index itself (0–9).
+// Topics: up to 4 answers per colour, dealt from a shuffled pool so neighbours in the pool land in different colours.
+// One answer per colour would repeat the same few facts all over the picture (e.g. only 3 × 7 and 7 × 3).
+const GROUP_MAX=4;
+function answerGroups(codes,level,code){
+  const n=Math.max(0,...codes)+1,t=TOPICS[level];
+  if(!t)return range(0,n-1).map(v=>[v]);
   rng=seeded(code*13+level*7919);
-  try{const pool=[...t.values];for(let i=pool.length-1;i>0;i--){const j=randInt(0,i);[pool[i],pool[j]]=[pool[j],pool[i]];}return pool.slice(0,10).sort((a,b)=>a-b);}
-  finally{rng=Math.random;}
+  try{
+    const pool=[...t.values];for(let i=pool.length-1;i>0;i--){const j=randInt(0,i);[pool[i],pool[j]]=[pool[j],pool[i]];}
+    const size=Math.max(1,Math.min(GROUP_MAX,Math.floor(pool.length/n)));
+    return range(0,n-1).map(c=>pool.slice(c*size,c*size+size).sort((a,b)=>a-b));
+  }finally{rng=Math.random;}
 }
 function equationFor(target,level,style){
   if(TOPICS[level])return TOPICS[level].make(target);
@@ -126,12 +133,16 @@ function equationFor(target,level,style){
   const c=randInt(10,40),s=target+c,a=randInt(1,s-1);return `${a} + ${s-a} − ${c}`;
 }
 
-// Equations for every cell, in row-major order, seeded by the 題目編號 and settings.
-function generateEquations(codes,level,style,code){
-  const answers=answersFor(level,code);
+// Equations and their answers for every cell, in row-major order, seeded by the 題目編號 and settings.
+function generatePuzzle(codes,level,style,code){
+  const groups=answerGroups(codes,level,code);
   rng=seeded(code*7+level*100003+['mixed','plus','minus','times'].indexOf(style));
-  try{return codes.map(c=>equationFor(answers[c],level,style));}finally{rng=Math.random;}
+  try{
+    const answers=codes.map(c=>groups[c].length>1?pick(groups[c]):groups[c][0]);
+    return {groups,answers,equations:answers.map(a=>equationFor(a,level,style))};
+  }finally{rng=Math.random;}
 }
+const generateEquations=(codes,level,style,code)=>generatePuzzle(codes,level,style,code).equations;
 
 // A puzzle travels in the URL (?p=…) so a link reproduces it exactly: grid, palette and settings.
 const b64url={
@@ -164,5 +175,5 @@ function spritePuzzle(item){
   return {w:rows[0].length,h:rows.length,codes:codes.map(v=>remap.get(v)),palette,blank:white?white.value:null,title:item.name};
 }
 
-window.PM={ART_GALLERY,artRows,galleryImageSource,toOKLab,TOPICS,levelName,answersFor,generateEquations,encodePuzzle,decodePuzzle,spritePuzzle};
+window.PM={ART_GALLERY,artRows,galleryImageSource,toOKLab,TOPICS,levelName,answerGroups,generatePuzzle,generateEquations,encodePuzzle,decodePuzzle,spritePuzzle};
 })();
