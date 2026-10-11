@@ -68,7 +68,7 @@ a{color:var(--green)}
 .keys{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
 .key{height:clamp(48px,7vh,60px);border:0;border-radius:14px;background:#f2f3ee;font-size:26px;font-weight:800;box-shadow:0 2px 0 #dcddd5;transition:transform .05s}
 .key:active{transform:translateY(2px);box-shadow:none}
-.nav{display:flex;gap:8px}.kbd-hint{display:none;text-align:center;font-size:12px;color:var(--muted);line-height:2}.kbd-hint span{display:block;white-space:nowrap}.kbd-hint kbd{font:700 11px/1 "DM Sans",sans-serif;border:1px solid #d5d6cf;border-bottom-width:2px;border-radius:5px;padding:2px 6px;margin:0 1px;background:#fafaf7;color:#3d453e}.key.pressed{transform:translateY(2px);box-shadow:none;background:#dfeee3}
+.nav{display:flex;gap:8px}.kbd-hint{display:none;text-align:center;font-size:12px;color:var(--muted);line-height:2}.focus-hint{text-align:center;font-size:13px;font-weight:700;color:#8a5a12;background:#fff4e0;border:1px solid #f3d9a8;border-radius:10px;padding:8px 10px}.kbd-hint span{display:block;white-space:nowrap}.kbd-hint kbd{font:700 11px/1 "DM Sans",sans-serif;border:1px solid #d5d6cf;border-bottom-width:2px;border-radius:5px;padding:2px 6px;margin:0 1px;background:#fafaf7;color:#3d453e}.key.pressed{transform:translateY(2px);box-shadow:none;background:#dfeee3}
 @media (hover:hover) and (pointer:fine){.kbd-hint{display:block}}
 .nav button{flex:1;height:40px;border:0;border-radius:11px;background:#f6f6f1;font-size:13px;font-weight:700;color:#4c554d}
 
@@ -136,6 +136,7 @@ a{color:var(--green)}
       <div class="msg" id="msg" aria-live="polite">算出答案，按下面的數字</div>
       <div class="keys" id="keys"></div>
       <div class="nav"><button id="prevBtn">← 上一格</button><button id="skipBtn">跳過這格 →</button></div>
+      <div class="focus-hint hidden" id="focusHint">⌨️ 鍵盤沒反應？先點一下遊戲畫面，再打數字</div>
       <div class="kbd-hint" id="kbdHint"><span>⌨️ 也可以用鍵盤：<kbd>0</kbd>–<kbd>9</kbd> 作答</span><span><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 換格子　<kbd>Tab</kbd> 跳過</span></div>
     </section>
   </div>
@@ -163,6 +164,7 @@ a{color:var(--green)}
     <h2 id="menuTitle">設定</h2>
     <label class="row"><span>顯示計時<small>完成時告訴你花了多久</small></span><input type="checkbox" class="switch" id="timerSwitch" /></label>
     <div class="row"><span>題目編號<small id="codeInfo"></small></span></div>
+    <div class="row"><span>版本<small>2026-10-11c（鍵盤輸入修正後）</small></span></div>
     <button class="btn" id="shareBtn">分享這一題給別人</button>
     <button class="btn ghost" id="restartBtn">重新開始這一題</button>
     <a class="btn ghost" href="play.html">換一張圖</a>
@@ -270,7 +272,7 @@ a{color:var(--green)}
     function save(){store.set(key,{solved:[...solved],mistakes,elapsed});}
 
     // keyboard: digits answer, arrows/tab move
-    document.addEventListener('keydown',e=>{
+    window.addEventListener('keydown',e=>{
       if(!$('#menu').classList.contains('hidden')||finished)return;
       if(e.metaKey||e.ctrlKey||e.altKey)return;
       const digit=(/^(?:Digit|Numpad)([0-9])$/.exec(e.code)||/^([0-9])$/.exec(e.key)||[])[1];
@@ -278,7 +280,11 @@ a{color:var(--green)}
       const move={ArrowRight:1,ArrowLeft:-1,ArrowDown:z.w,ArrowUp:-z.w}[e.key];
       if(move){const ok=i=>i>=0&&i<z.codes.length&&(move===1||move===-1?Math.floor(i/z.w)===Math.floor(cur/z.w):true);let i=cur+move;while(ok(i)&&(isBlank(i)||solved.has(i)))i+=move;if(ok(i))select(i);e.preventDefault();}
       else if(e.key==='Tab'||e.key===' '){select(nextTodo(cur,e.shiftKey?-1:1)??cur);e.preventDefault();}
-    });
+    },true);
+
+    // Keys only reach the page while it has focus (not the address bar or DevTools); say so instead of failing silently.
+    const focusHint=$('#focusHint'),syncFocus=()=>focusHint.classList.toggle('hidden',!KBD||document.hasFocus());
+    window.addEventListener('blur',syncFocus);window.addEventListener('focus',syncFocus);setInterval(syncFocus,1000);syncFocus();
 
     // timer (off by default; it is a preference, not part of the puzzle)
     let timerOn=store.get('pm-play-timer',false),tick=0;
