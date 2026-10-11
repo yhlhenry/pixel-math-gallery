@@ -61,7 +61,7 @@ a{color:var(--green)}
 .ans{width:56px;height:56px;border-radius:14px;border:2.5px dashed #b9c7bb;display:grid;place-items:center;font-size:32px;font-weight:900;color:var(--muted);flex:none;transition:.15s}
 .ans.ok{border-style:solid;border-color:var(--green);color:var(--green);background:var(--green2)}
 .ans.no{border-style:solid;border-color:var(--bad);color:var(--bad);background:#fdecea}
-.shake{animation:shake .35s}
+.shake{animation:shake .35s}.good{animation:good .45s}@keyframes good{0%{background:#e5f1e9}100%{background:transparent}}
 @keyframes shake{20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
 .msg{text-align:center;font-size:12px;color:var(--muted);min-height:16px}
 .msg.no{color:var(--bad)}
@@ -252,13 +252,14 @@ a{color:var(--green)}
       if(solved.has(i)){ans.className='ans ok';ans.textContent=z.codes[i];msg('這格已經答對了，跳到下一格吧');}else msg(KBD?'算出答案，按鍵盤數字或下面的按鈕':'算出答案，按下面的數字');}
     function msg(t,bad){const m=$('#msg');m.textContent=t;m.classList.toggle('no',!!bad);}
     function answer(d){
-      if(finished||cur<0||solved.has(cur))return;
+      if(finished||cur<0)return;
+      if(solved.has(cur)){select(nextTodo(cur,1));msg('這格答對過了，幫你跳到還沒算的格子');return;}
       const ans=$('#ans');ans.textContent=d;
       if(d===z.codes[cur]){
         solved.add(cur);ans.className='ans ok';const c=cells[cur];c.classList.remove('todo','cur');c.classList.add('done','pop');c.style.background=color(cur);
         setTimeout(()=>c.classList.remove('pop'),400);save();updateProgress();
         if(solved.size===todoIdx.length){finish();return;}
-        msg('答對了！');const next=nextTodo(cur,1);setTimeout(()=>select(next),260);
+        select(nextTodo(cur,1));msg('答對了！下一題');const q=$('#question');q.classList.remove('good');void q.offsetWidth;q.classList.add('good');
       }else{
         mistakes++;wrongHere++;save();ans.className='ans no';const q=$('#question');q.classList.remove('shake');void q.offsetWidth;q.classList.add('shake');
         msg(wrongHere>=2?'再算一次，慢慢來，可以拿紙筆算算看':'不對喔，再想想看',true);
@@ -271,9 +272,11 @@ a{color:var(--green)}
     // keyboard: digits answer, arrows/tab move
     document.addEventListener('keydown',e=>{
       if(!$('#menu').classList.contains('hidden')||finished)return;
-      if(/^[0-9]$/.test(e.key)){const k=[...keys.children].find(b=>b.textContent===e.key);k?.classList.add('pressed');setTimeout(()=>k?.classList.remove('pressed'),130);answer(+e.key);e.preventDefault();return;}
+      if(e.metaKey||e.ctrlKey||e.altKey)return;
+      const digit=(/^(?:Digit|Numpad)([0-9])$/.exec(e.code)||/^([0-9])$/.exec(e.key)||[])[1];
+      if(digit!==undefined){const k=[...keys.children].find(b=>b.textContent===digit);k?.classList.add('pressed');setTimeout(()=>k?.classList.remove('pressed'),130);if(!e.repeat)answer(+digit);e.preventDefault();return;}
       const move={ArrowRight:1,ArrowLeft:-1,ArrowDown:z.w,ArrowUp:-z.w}[e.key];
-      if(move){let i=cur+move;while(i>=0&&i<z.codes.length&&isBlank(i))i+=move;if(i>=0&&i<z.codes.length)select(i);e.preventDefault();}
+      if(move){const ok=i=>i>=0&&i<z.codes.length&&(move===1||move===-1?Math.floor(i/z.w)===Math.floor(cur/z.w):true);let i=cur+move;while(ok(i)&&(isBlank(i)||solved.has(i)))i+=move;if(ok(i))select(i);e.preventDefault();}
       else if(e.key==='Tab'||e.key===' '){select(nextTodo(cur,e.shiftKey?-1:1)??cur);e.preventDefault();}
     });
 
