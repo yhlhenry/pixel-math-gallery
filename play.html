@@ -46,6 +46,8 @@ a{color:var(--green)}
 .cell.todo{background:#fff}
 .cell.todo::after{content:'';position:absolute;inset:38%;border-radius:50%;background:#e9e9e3}
 .cell.done{border-color:transparent}
+.cell .q{position:absolute;inset:0;display:grid;place-items:center;font-size:var(--qfs,8px);font-weight:700;letter-spacing:-.02em;color:#3d453e;white-space:nowrap;overflow:hidden;font-variant-numeric:tabular-nums;pointer-events:none}
+.board.eqs .cell.todo::after{display:none}.board.eqs .cell.cur{background:#e5f1e9}.board.eqs .cell.cur .q{color:var(--green);font-weight:900}
 .cell.pop{animation:pop .35s ease-out}
 .cell.cur{z-index:2;box-shadow:0 0 0 3px var(--green),0 0 0 6px #2f765333;border-radius:2px}
 .cell.cur::after{background:var(--green);inset:30%;animation:blink 1s infinite alternate}
@@ -58,7 +60,7 @@ a{color:var(--green)}
 .coord{font-size:13px;font-weight:800;color:#fff;background:var(--green);border-radius:9px;padding:5px 9px;flex:none}
 .eq{font-size:clamp(24px,7.4vw,38px);font-weight:800;letter-spacing:.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .eq.long{font-size:clamp(19px,5.6vw,32px)}
-.ans{width:56px;height:56px;border-radius:14px;border:2.5px dashed #b9c7bb;display:grid;place-items:center;font-size:32px;font-weight:900;color:var(--muted);flex:none;transition:.15s}
+.ans{min-width:56px;padding:0 8px;height:56px;border-radius:14px;border:2.5px dashed #b9c7bb;display:grid;place-items:center;font-size:32px;font-weight:900;color:var(--muted);flex:none;transition:.15s}
 .ans.ok{border-style:solid;border-color:var(--green);color:var(--green);background:var(--green2)}
 .ans.no{border-style:solid;border-color:var(--bad);color:var(--bad);background:#fdecea}
 .shake{animation:shake .35s}.good{animation:good .45s}@keyframes good{0%{background:#e5f1e9}100%{background:transparent}}
@@ -88,12 +90,14 @@ a{color:var(--green)}
 .sec{font-size:13px;font-weight:800;margin:20px 0 10px}
 .levels{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
 .levels button{height:42px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:13px;color:#5d635c}
+.levels.topics{grid-template-columns:repeat(3,1fr);margin-top:6px}.sub{font-size:12px;color:var(--muted);margin:12px 0 6px}
 .levels button.on{border-color:var(--green);background:var(--green2);color:var(--green);font-weight:800}
 .gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px}
 .gal button{border:1px solid var(--line);border-radius:14px;background:#fff;padding:10px 8px 8px;transition:.15s}
 .gal button:hover{border-color:#83ac91;transform:translateY(-2px)}
 .gal img{width:100%;aspect-ratio:1;image-rendering:pixelated;display:block}
 .gal span{display:block;font-size:12px;font-weight:700;margin-top:6px}
+.gal small{display:block;font-size:11px;color:var(--muted);margin-top:2px}
 .own{margin-top:22px;font-size:13px;color:var(--muted)}
 .foot{margin-top:28px;font-size:12px;color:var(--muted)}
 @media (max-width:420px){.levels{grid-template-columns:repeat(3,1fr)}}
@@ -135,9 +139,9 @@ a{color:var(--green)}
       <div class="question" id="question"><span class="coord" id="coord">A1</span><span class="eq" id="eq">3 + 4</span><span class="ans" id="ans">?</span></div>
       <div class="msg" id="msg" aria-live="polite">算出答案，按下面的數字</div>
       <div class="keys" id="keys"></div>
-      <div class="nav"><button id="prevBtn">← 上一格</button><button id="skipBtn">跳過這格 →</button></div>
+      <div class="nav"><button id="prevBtn">← 上一格</button><button id="clearBtn" class="hidden">⌫ 清除</button><button id="skipBtn">跳過這格 →</button></div>
       <div class="focus-hint hidden" id="focusHint">⌨️ 鍵盤沒反應？先點一下遊戲畫面，再打數字。有裝 Vimium 這類擴充功能請先暫停它。</div>
-      <div class="kbd-hint" id="kbdHint"><span>⌨️ 也可以用鍵盤：<kbd>0</kbd>–<kbd>9</kbd> 作答</span><span><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 換格子　<kbd>Tab</kbd> 跳過</span>
+      <div class="kbd-hint" id="kbdHint"><span>⌨️ 也可以用鍵盤：<kbd>0</kbd>–<kbd>9</kbd> 作答</span><span><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> 換格子　<kbd>Tab</kbd> 跳過<span class="multi-only hidden">　<kbd>⌫</kbd> 刪掉一位</span></span>
         <details class="kbd-help"><summary>鍵盤沒反應？</summary><ol>
           <li><b>先點一下遊戲畫面。</b>游標在網址列或開發者工具時，按鍵不會傳到遊戲。</li>
           <li><b>暫停鍵盤操作類的擴充功能。</b>Vimium、Vimium C、Surfingkeys 這類用鍵盤控制網頁的擴充功能會把數字鍵攔走。Vimium 可以按 <kbd>i</kbd> 進入輸入模式，或在它的設定裡把這個網址加進排除清單。</li>
@@ -155,9 +159,11 @@ a{color:var(--green)}
   <div class="picker" style="grid-row:2/4"><div class="picker-in">
     <h1>挑一張圖，開始算！</h1>
     <p class="lead">點一格、算出答案、按數字。答對了格子就會自動塗上顏色。電腦也可以直接用鍵盤打數字。</p>
-    <div class="sec">1　選年級</div>
+    <div class="sec">1　選難度</div>
     <div class="levels" id="levels"></div>
-    <div class="sec">2　選一張圖</div>
+    <div class="sub">或依學習重點（不分年級）</div>
+    <div class="levels topics" id="topics"></div>
+    <div class="sec">2　選一張圖<span style="font-weight:500;color:var(--muted)">　格子越少、題目越少，入門小圖最快完成</span></div>
     <div class="gal" id="gal"></div>
     <p class="own">想用自己的圖？到 <a href="./">產生器</a> 上傳，生成後按「線上玩」。</p>
     <p class="foot">像素算算樂由 <a href="https://henryyang.tw/" target="_blank" rel="author noopener">亨利羊 Henry Yang</a> 製作。</p>
@@ -167,9 +173,10 @@ a{color:var(--green)}
 <div class="overlay hidden" id="menu" role="dialog" aria-modal="true" aria-labelledby="menuTitle">
   <div class="sheet">
     <h2 id="menuTitle">設定</h2>
+    <label class="row"><span>格子裡顯示題目<small>一眼看到所有算式，可以先挑會的算</small></span><input type="checkbox" class="switch" id="eqSwitch" /></label>
     <label class="row"><span>顯示計時<small>完成時告訴你花了多久</small></span><input type="checkbox" class="switch" id="timerSwitch" /></label>
     <div class="row"><span>題目編號<small id="codeInfo"></small></span></div>
-    <div class="row"><span>版本<small>2026-10-11d</small></span></div>
+    <div class="row"><span>版本<small>2026-10-11e</small></span></div>
     <button class="btn" id="shareBtn">分享這一題給別人</button>
     <button class="btn ghost" id="restartBtn">重新開始這一題</button>
     <a class="btn ghost" href="play.html">換一張圖</a>
@@ -194,9 +201,8 @@ a{color:var(--green)}
 <script>
 (() => {
   'use strict';
-  const {ART_GALLERY,galleryImageSource,generateEquations,encodePuzzle,decodePuzzle,spritePuzzle}=window.PM;
+  const {ART_GALLERY,galleryImageSource,TOPICS,levelName,answersFor,generateEquations,encodePuzzle,decodePuzzle,spritePuzzle}=window.PM;
   const $=s=>document.querySelector(s);
-  const LEVEL_NAMES=['','一','二','三','四','五','六'];
   const MAX_SIDE=32;
   const KBD=matchMedia('(hover:hover) and (pointer:fine)').matches;
   const store={get(k,d){try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v);}catch{return d;}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch{}}};
@@ -210,10 +216,10 @@ a{color:var(--green)}
   function showPicker(){
     $('#pickerView').classList.remove('hidden');
     let level=store.get('pm-play-level',2);
-    const levels=$('#levels');
-    for(let l=1;l<=6;l++){const b=document.createElement('button');b.textContent=`${LEVEL_NAMES[l]}年級`;b.classList.toggle('on',l===level);b.addEventListener('click',()=>{level=l;store.set('pm-play-level',l);[...levels.children].forEach((x,i)=>x.classList.toggle('on',i+1===l));});levels.append(b);}
+    const btns=[];
+    for(let l=1;l<=12;l++){const b=document.createElement('button');b.textContent=levelName(l);if(TOPICS[l])b.title=TOPICS[l].desc;b.classList.toggle('on',l===level);b.addEventListener('click',()=>{level=l;store.set('pm-play-level',l);btns.forEach((x,i)=>x.classList.toggle('on',i+1===l));});btns.push(b);$(l<=6?'#levels':'#topics').append(b);}
     const gal=$('#gal');
-    for(const item of ART_GALLERY){const b=document.createElement('button');b.type='button';const img=new Image();img.src=galleryImageSource(item);img.alt='';const name=document.createElement('span');name.textContent=item.name;b.append(img,name);b.setAttribute('aria-label',`玩「${item.name}」`);
+    for(const item of ART_GALLERY){const b=document.createElement('button');b.type='button';const img=new Image();img.src=galleryImageSource(item);img.alt='';const name=document.createElement('span');name.textContent=item.name;const z0=spritePuzzle(item),size=document.createElement('small');size.textContent=`${z0.w}×${z0.h} 格 · ${z0.codes.filter(v=>v!==z0.blank).length} 題`;b.append(img,name,size);b.setAttribute('aria-label',`玩「${item.name}」`);
       b.addEventListener('click',()=>{const z=spritePuzzle(item);location.href=`play.html?p=${encodePuzzle({...z,level,style:'mixed',code:randomCode()})}`;});gal.append(b);}
   }
   const randomCode=()=>Math.floor(Math.random()*90000)+10000;
@@ -224,7 +230,8 @@ a{color:var(--green)}
     try{z=decodePuzzle(p);}catch(e){console.error(e);document.body.innerHTML='<p style="padding:24px;font-family:sans-serif">這個連結好像壞掉了。<a href="play.html">回到選圖</a></p>';return;}
     if(z.w>MAX_SIDE||z.h>MAX_SIDE){document.body.innerHTML=`<p style="padding:24px;font-family:sans-serif">這張圖有 ${z.w} × ${z.h} 格，線上玩最多 ${MAX_SIDE} 格。請回 <a href="./">產生器</a> 把「最大格數」調小。</p>`;return;}
     $('#game').classList.remove('hidden');
-    const eqs=generateEquations(z.codes,z.level,z.style,z.code);
+    const eqs=generateEquations(z.codes,z.level,z.style,z.code),answers=answersFor(z.level,z.code),target=i=>answers[z.codes[i]];
+    const multi=z.codes.some((v,i)=>target(i)>9);let typed='';
     const isBlank=i=>z.blank!==null&&z.codes[i]===z.blank;
     const todoIdx=z.codes.map((_,i)=>i).filter(i=>!isBlank(i));
     const key='pm-play:'+p;
@@ -237,40 +244,57 @@ a{color:var(--green)}
 
     document.title=`${z.title||'像素算算樂'}・線上玩｜像素算算樂`;
     $('#gTitle').textContent=z.title?`${z.title}`:'像素算算樂';
-    $('#gSub').textContent=`${LEVEL_NAMES[z.level]}年級 · ${todoIdx.length} 題 · 題目編號 ${z.code}`;
+    $('#gSub').textContent=`${levelName(z.level)} · ${todoIdx.length} 題 · 題目編號 ${z.code}`;
     $('#codeInfo').textContent=`${z.code}（同一個連結，每個人拿到的題目都一樣）`;
 
     // board
     const board=$('#board');board.style.setProperty('--w',z.w);board.style.setProperty('--h',z.h);
     const cells=z.codes.map((_,i)=>{const c=document.createElement('div'),x=i%z.w,y=Math.floor(i/z.w);c.className='cell';c.setAttribute('role','gridcell');
       if((x+1)%5===0&&x+1<z.w)c.classList.add('c5');if((y+1)%5===0&&y+1<z.h)c.classList.add('r5');
-      if(isBlank(i)||solved.has(i)){c.classList.add('done');c.style.background=color(i);}else c.classList.add('todo');
+      if(isBlank(i)||solved.has(i)){c.classList.add('done');c.style.background=color(i);}else{c.classList.add('todo');const q=document.createElement('span');q.className='q';q.textContent=eqs[i].replace(/ /g,'');c.append(q);}
       c.addEventListener('click',()=>{if(!isBlank(i))select(i);});board.append(c);return c;});
 
     // keypad
     const keys=$('#keys');for(const d of [1,2,3,4,5,6,7,8,9,0]){const b=document.createElement('button');b.className='key';b.textContent=d;b.setAttribute('aria-label',`答案 ${d}`);b.addEventListener('click',()=>answer(d));keys.append(b);}
     $('#skipBtn').addEventListener('click',()=>select(nextTodo(cur,1)??cur));
     $('#prevBtn').addEventListener('click',()=>select(nextTodo(cur,-1)??cur));
+    $('#clearBtn').classList.toggle('hidden',!multi);$('.multi-only').classList.toggle('hidden',!multi);
+    $('#clearBtn').addEventListener('click',()=>backspace());$('#ans').addEventListener('click',()=>{typed='';showTyped();});
+
+    // Equations inside the cells, like the paper version, so kids can pick the ones they know first.
+    // The font follows the cell size; when cells get too small to read, the board falls back to dots.
+    let eqOn=store.get('pm-play-showeq',true);
+    const longest=Math.max(...todoIdx.map(i=>eqs[i].replace(/ /g,'').length),1);
+    function fitEqs(){const cell=board.clientWidth/z.w,fs=Math.min(cell*.34,cell*1.35/longest),fits=fs>=6.5;
+      board.style.setProperty('--qfs',`${fs.toFixed(1)}px`);board.classList.toggle('eqs',eqOn&&fits);
+      $('#eqSwitch').checked=eqOn;$('#eqSwitch').disabled=!fits;$('#eqSwitch').closest('.row').querySelector('small').textContent=fits?'一眼看到所有算式，可以先挑會的算':'畫面太小、格子放不下算式；轉橫或用平板、電腦就會出現';}
+    new ResizeObserver(fitEqs).observe(board);
+    $('#eqSwitch').addEventListener('change',e=>{eqOn=e.target.checked;store.set('pm-play-showeq',eqOn);fitEqs();});
 
     function nextTodo(from,dir){const n=todoIdx.length;if(!n)return null;let k=Math.max(0,todoIdx.indexOf(from));for(let s=1;s<=n;s++){const i=todoIdx[(k+dir*s+n*s)%n];if(!solved.has(i))return i;}return null;}
     function select(i){if(i==null||finished)return;if(cur>=0)cells[cur].classList.remove('cur');cur=i;wrongHere=0;cells[i].classList.add('cur');
       $('#coord').textContent=coord(i);const eq=$('#eq');eq.textContent=eqs[i];eq.classList.toggle('long',eqs[i].length>11);
-      const ans=$('#ans');ans.className='ans';ans.textContent='?';
-      if(solved.has(i)){ans.className='ans ok';ans.textContent=z.codes[i];msg('這格已經答對了，跳到下一格吧');}else msg(KBD?'算出答案，按鍵盤數字或下面的按鈕':'算出答案，按下面的數字');}
+      typed='';const ans=$('#ans');ans.className='ans';ans.textContent='?';
+      if(solved.has(i)){ans.className='ans ok';ans.textContent=target(i);msg('這格已經答對了，跳到下一格吧');}else msg(multi?'算出答案，一位一位按數字':KBD?'算出答案，按鍵盤數字或下面的按鈕':'算出答案，按下面的數字');}
+    function showTyped(){const ans=$('#ans');ans.className='ans';ans.textContent=typed||'?';}
+    function backspace(){if(finished||cur<0||solved.has(cur))return;typed=typed.slice(0,-1);showTyped();}
     function msg(t,bad){const m=$('#msg');m.textContent=t;m.classList.toggle('no',!!bad);}
     function answer(d){
       if(finished||cur<0)return;
       if(solved.has(cur)){select(nextTodo(cur,1));msg('這格答對過了，幫你跳到還沒算的格子');return;}
-      const ans=$('#ans');ans.textContent=d;
-      if(d===z.codes[cur]){
-        solved.add(cur);ans.className='ans ok';const c=cells[cur];c.classList.remove('todo','cur');c.classList.add('done','pop');c.style.background=color(cur);
+      // Multi-digit answers build up digit by digit: wait while the digits so far could still be right.
+      const want=String(target(cur));typed+=d;const ans=$('#ans');ans.textContent=typed;
+      if(typed!==want&&want.startsWith(typed)){ans.className='ans';msg('再按下一位數字');return;}
+      const right=typed===want;typed='';
+      if(right){
+        solved.add(cur);ans.className='ans ok';const c=cells[cur];c.classList.remove('todo','cur');c.querySelector('.q')?.remove();c.classList.add('done','pop');c.style.background=color(cur);
         setTimeout(()=>c.classList.remove('pop'),400);save();updateProgress();
         if(solved.size===todoIdx.length){finish();return;}
         select(nextTodo(cur,1));msg('答對了！下一題');const q=$('#question');q.classList.remove('good');void q.offsetWidth;q.classList.add('good');
       }else{
         mistakes++;wrongHere++;save();ans.className='ans no';const q=$('#question');q.classList.remove('shake');void q.offsetWidth;q.classList.add('shake');
         msg(wrongHere>=2?'再算一次，慢慢來，可以拿紙筆算算看':'不對喔，再想想看',true);
-        setTimeout(()=>{if(!solved.has(cur)){ans.className='ans';ans.textContent='?';}},700);
+        setTimeout(()=>{if(!solved.has(cur)&&!typed){ans.className='ans';ans.textContent='?';}},700);
       }
     }
     function updateProgress(){$('#bar').style.width=`${todoIdx.length?solved.size/todoIdx.length*100:100}%`;}
@@ -281,6 +305,7 @@ a{color:var(--green)}
       if(!$('#menu').classList.contains('hidden')||finished)return;
       if(e.metaKey||e.ctrlKey||e.altKey)return;
       const digit=(/^(?:Digit|Numpad)([0-9])$/.exec(e.code)||/^([0-9])$/.exec(e.key)||[])[1];
+      if(e.key==='Backspace'||e.key==='Delete'){backspace();e.preventDefault();return;}
       if(digit!==undefined){const k=[...keys.children].find(b=>b.textContent===digit);k?.classList.add('pressed');setTimeout(()=>k?.classList.remove('pressed'),130);if(!e.repeat)answer(+digit);e.preventDefault();return;}
       const move={ArrowRight:1,ArrowLeft:-1,ArrowDown:z.w,ArrowUp:-z.w}[e.key];
       if(move){const ok=i=>i>=0&&i<z.codes.length&&(move===1||move===-1?Math.floor(i/z.w)===Math.floor(cur/z.w):true);let i=cur+move;while(ok(i)&&(isBlank(i)||solved.has(i)))i+=move;if(ok(i))select(i);e.preventDefault();}
@@ -304,7 +329,7 @@ a{color:var(--green)}
     $('#menuBtn').addEventListener('click',openMenu);$('#closeMenu').addEventListener('click',closeMenu);
     $('#menu').addEventListener('click',e=>{if(e.target.id==='menu')closeMenu();});
     $('#restartBtn').addEventListener('click',()=>{store.set(key,null);location.reload();});
-    const share=async()=>{const url=location.href,title=`來玩像素算算樂：${z.title||'數學塗色'}（${LEVEL_NAMES[z.level]}年級）`;
+    const share=async()=>{const url=location.href,title=`來玩像素算算樂：${z.title||'數學塗色'}（${levelName(z.level)}）`;
       try{if(navigator.share){await navigator.share({title,url});return;}}catch(e){if(e.name==='AbortError')return;}
       try{await navigator.clipboard.writeText(url);toast('連結已複製，貼給朋友就能玩同一題');}catch{prompt('複製這個連結分享：',url);}};
     $('#shareBtn').addEventListener('click',share);$('#doneShare').addEventListener('click',share);

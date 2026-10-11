@@ -2,8 +2,22 @@
 // Both pages must produce the same equations for the same 題目編號, so this code lives in one place.
 (() => {
 'use strict';
-// Original 16×16 sprites. `half` rows are the left 8 columns and get mirrored, which keeps faces symmetric; '.' is background.
+// Original sprites: 10×10 starters (fewer cells for younger kids), then 16×16. `half` rows are the left 8 columns and get mirrored, which keeps faces symmetric; '.' is background.
 const ART_GALLERY=[
+  {name:'愛心',kind:'入門小圖',colors:{K:'#3d3132',R:'#f0505a',W:'#ffffff',P:'#ffb0b8'},art:[
+    '..........','.KKK..KKK.','KRRRKKRRRK','KRWRRRRRRK','KRRRRRRRRK','KRRRRRRRRK','.KRRRRRRK.','..KRRRRK..','...KRRK...','....KK....']},
+  {name:'香菇',kind:'入門小圖',colors:{K:'#3d3132',R:'#f0505a',W:'#ffffff',C:'#f5d9b0',P:'#ff9eb0'},half:[
+    '...KK','.KKRR','KRWWR','KRWWR','KRRRR','KKKKK','.KCKC','.KPCC','..KCC','...KK']},
+  {name:'小幽靈',kind:'入門小圖',colors:{K:'#3d3132',L:'#d9ccff',P:'#ff9eb0'},half:[
+    '...KK','..KLL','.KLLL','.KLKL','.KLKL','KLPLL','KLLLL','KLLLL','KLKLL','KK.KK']},
+  {name:'貓臉',kind:'入門小圖',colors:{K:'#3d3132',O:'#f6a34b',P:'#ff9eb0',W:'#ffffff'},half:[
+    '.K...','KOK..','KOOKK','KOOOO','KOKOO','KOKOO','KPOOK','.KOOO','..KKK','.....']},
+  {name:'青蛙',kind:'入門小圖',colors:{K:'#3d3132',G:'#6cc26a',L:'#c9ec9a',W:'#ffffff',P:'#ff9eb0'},half:[
+    '.KKK.','KWKWK','KWWWG','KGGGG','KGPGG','KGGGK','KGGGG','.KGLL','..KKK','.....']},
+  {name:'小鴨',kind:'入門小圖',colors:{K:'#3d3132',Y:'#ffd64a',O:'#f5953d',P:'#ff9eb0'},half:[
+    '...KK','..KYY','.KYYY','.KYKY','KYYKY','KPYYO','KYYOO','.KYYY','..KKK','.....']},
+  {name:'蘋果',kind:'入門小圖',colors:{K:'#3d3132',R:'#f0505a',G:'#5cbf6a',W:'#ffffff',B:'#8a5a3c'},art:[
+    '....KK.KK.','....KBKGGK','..KKKBKKK.','.KRRRKRRK.','KRWRRRRRRK','KRWRRRRRRK','KRRRRRRRRK','KRRRRRRRRK','.KRRRRRRK.','..KKKKKK..']},
   {name:'貓咪',kind:'可愛動物',colors:{K:'#3d3132',O:'#f6a34b',P:'#f7a1b0',W:'#ffffff'},half:[
     '........','.KK.....','.KOK....','.KOOK...','.KOPOKKK','.KOOOOOO','KOOOOOOO','KOOWKOOO',
     'KOOKKOOO','KOOOOOOP','KPPOOOKO','KOOOOOOK','.KOOOOOO','..KKOOOO','....KKKK','........']},
@@ -80,7 +94,30 @@ const ADVANCED={
     {tags:['times','minus'],make:t=>{const a=randInt(2,5),k=randInt(1,4),b=k+randInt(1,9);return `${a} × (${b} − ${b-k}) ${sign(t-a*k)}`;}},
     {tags:['plus','minus'],make:t=>{const s2=randInt(2,20),s1=t+s2,a=randInt(1,s1-1),c=randInt(1,s2-1);return `(${a} + ${s1-a}) − (${c} + ${s2-c})`;}}]
 };
+// 專項練習 (levels 7+): one skill each, e.g. for curricula that are not split by grade.
+// Their answers go beyond 0–9, so each colour gets its own answer value (see answersFor).
+const range=(a,b)=>Array.from({length:b-a+1},(_,i)=>a+i);
+const between=(lo,hi)=>randInt(lo,hi);
+const PRODUCTS=[...new Set(range(2,9).flatMap(a=>range(2,9).map(b=>a*b)))];
+const TOPICS={
+  7:{name:'一位加一位',desc:'一位數 + 一位數，答案在 18 以內',values:range(2,18),make:t=>{const a=between(Math.max(1,t-9),Math.min(9,t-1));return `${a} + ${t-a}`;}},
+  8:{name:'18 以內減法',desc:'18 以內減一位數，答案是一位數',values:range(0,9),make:t=>{const b=t?between(Math.max(1,10-t),9):between(1,9);return `${t+b} − ${b}`;}},
+  9:{name:'兩位加兩位',desc:'兩位數 + 兩位數，答案在 100 以內',values:range(40,100),make:t=>{const a=between(Math.max(10,t-99),Math.min(99,t-10));return `${a} + ${t-a}`;}},
+  10:{name:'兩位減兩位',desc:'兩位數 − 兩位數',values:range(11,69),make:t=>{const b=between(10,99-t);return `${t+b} − ${b}`;}},
+  11:{name:'九九乘法',desc:'一位數 × 一位數（2 到 9 的乘法表）',values:PRODUCTS,make:t=>{const pairs=range(2,9).filter(a=>t%a===0&&t/a>=2&&t/a<=9);const a=pick(pairs);return `${a} × ${t/a}`;}},
+  12:{name:'九九除法',desc:'用乘法表算除法，除數是一位數',values:range(0,9),make:t=>{const d=between(2,9);return `${t*d} ÷ ${d}`;}}
+};
+const MAX_LEVEL=12;
+const levelName=l=>TOPICS[l]?TOPICS[l].name:`${['','一','二','三','四','五','六'][l]}年級`;
+// Answer for each palette index. Grades use the index itself (0–9); topics draw 10 different answers from their range, smallest first.
+function answersFor(level,code){
+  const t=TOPICS[level];if(!t)return range(0,9);
+  rng=seeded(code*13+level*7919);
+  try{const pool=[...t.values];for(let i=pool.length-1;i>0;i--){const j=randInt(0,i);[pool[i],pool[j]]=[pool[j],pool[i]];}return pool.slice(0,10).sort((a,b)=>a-b);}
+  finally{rng=Math.random;}
+}
 function equationFor(target,level,style){
+  if(TOPICS[level])return TOPICS[level].make(target);
   if(level>=4){const all=ADVANCED[level],fit=style==='mixed'?all:all.filter(g=>g.tags.includes(style));return pick(fit.length?fit:all).make(target);}
   const ops=level>=3?['plus','minus','times']:['plus','minus'],op=ops.includes(style)?style:pick(ops);
   if(level<=2){const lim=level===1?10:20;if(op==='minus'){const a=randInt(target,lim);return `${a} − ${a-target}`;}const a=randInt(0,target);return `${a} + ${target-a}`;}
@@ -91,8 +128,9 @@ function equationFor(target,level,style){
 
 // Equations for every cell, in row-major order, seeded by the 題目編號 and settings.
 function generateEquations(codes,level,style,code){
+  const answers=answersFor(level,code);
   rng=seeded(code*7+level*100003+['mixed','plus','minus','times'].indexOf(style));
-  try{return codes.map(c=>equationFor(c,level,style));}finally{rng=Math.random;}
+  try{return codes.map(c=>equationFor(answers[c],level,style));}finally{rng=Math.random;}
 }
 
 // A puzzle travels in the URL (?p=…) so a link reproduces it exactly: grid, palette and settings.
@@ -109,7 +147,7 @@ function decodePuzzle(str){
   const palette=o.p.map((h,i)=>{if(!/^[0-9a-f]{6}$/i.test(h))throw new Error('bad colour');return {value:i,hex:'#'+h,name:o.n?.[i]||`色票 ${i}`};});
   const codes=[...o.c].map(Number);
   if(codes.some(v=>v>=palette.length))throw new Error('bad code');
-  return {w:o.w,h:o.h,codes,palette,blank:o.b>=0?o.b:null,level:Math.min(6,Math.max(1,o.l|0)),style:['mixed','plus','minus','times'].includes(o.s)?o.s:'mixed',code:Math.min(99999,Math.max(1,o.k|0)),title:String(o.t||'').slice(0,40)};
+  return {w:o.w,h:o.h,codes,palette,blank:o.b>=0?o.b:null,level:Math.min(MAX_LEVEL,Math.max(1,o.l|0)),style:['mixed','plus','minus','times'].includes(o.s)?o.s:'mixed',code:Math.min(99999,Math.max(1,o.k|0)),title:String(o.t||'').slice(0,40)};
 }
 
 // Palette + codes for a gallery sprite: its own colours, numbered darkest first (same order index.html ends up with).
@@ -126,5 +164,5 @@ function spritePuzzle(item){
   return {w:rows[0].length,h:rows.length,codes:codes.map(v=>remap.get(v)),palette,blank:white?white.value:null,title:item.name};
 }
 
-window.PM={ART_GALLERY,artRows,galleryImageSource,toOKLab,generateEquations,encodePuzzle,decodePuzzle,spritePuzzle};
+window.PM={ART_GALLERY,artRows,galleryImageSource,toOKLab,TOPICS,levelName,answersFor,generateEquations,encodePuzzle,decodePuzzle,spritePuzzle};
 })();
